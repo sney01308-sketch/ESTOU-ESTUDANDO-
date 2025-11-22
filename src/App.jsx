@@ -1,136 +1,173 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient.js'
 
+// ============= COMPONENTE DE ALERTA REUTILIZÁVEL =============
+function Alert({ message, type = 'info', onClose }) {
+  useEffect(() => {
+    if (!message) return
+    const timer = setTimeout(onClose, 8000)
+    return () => clearTimeout(timer)
+  }, [message, onClose])
+
+  if (!message) return null
+
+  const variants = {
+    success: { bg: '#d4edda', border: '#c3e6cb', color: '#155724', icon: '✓' },
+    error: { bg: '#f8d7da', border: '#f5c6cb', color: '#721c24', icon: '✕' },
+    warning: { bg: '#fff3cd', border: '#ffeaa7', color: '#856404', icon: '⚠' },
+    info: { bg: '#d1ecf1', border: '#bee5eb', color: '#0c5460', icon: 'ℹ' },
+  }
+
+  const style = variants[type] || variants.info
+
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      style={{
+        padding: '16px 20px',
+        marginBottom: '24px',
+        borderRadius: '16px',
+        borderLeft: 6px solid ${style.border},
+        background: style.bg,
+        color: style.color,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        animation: 'slideDown 0.4s ease-out',
+        fontWeight: '500',
+      }}
+    >
+      <span>
+        <strong style={{ marginRight: '10px', fontSize: '20px' }}>{style.icon}</strong>
+        {message}
+      </span>
+      <button
+        onClick={onClose}
+        style={{
+          background: 'none',
+          border: 'none',
+          fontSize: '20px',
+          cursor: 'pointer',
+          opacity: 0.7,
+        }}
+        aria-label="Fechar alerta"
+      >
+        ×
+      </button>
+    </div>
+  )
+}
+
+// ============= APP PRINCIPAL =============
 export default function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [alert, setAlert] = useState({ message: '', type: '' }) // success | error | info
+  const [alert, setAlert] = useState({ message: '', type: '' })
 
-  const showAlert = (message, type = 'info', duration = 7000) => {
+  const showAlert = (message, type = 'info') => {
     setAlert({ message, type })
-    if (duration > 0) {
-      setTimeout(() => setAlert({ message: '', type: '' }), duration)
-    }
   }
 
-  // ==================== CADASTRO ====================
+  const closeAlert = () => setAlert({ message: '', type: '' })
+
   const handleSignUp = async () => {
-    if (!email || !password) return showAlert('Preencha e-mail e senha', 'error')
-    if (password.length < 6) return showAlert('A senha deve ter no mínimo 6 caracteres', 'error')
+    if (!email || !password) return showAlert('Preencha todos os campos', 'warning')
+    if (password.length < 6) return showAlert('Senha deve ter no mínimo 6 caracteres', 'warning')
 
     setLoading(true)
     showAlert('Criando sua conta...', 'info')
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: location.origin }
-    })
+    const { error } = await supabase.auth.signUp({ email, password })
 
     setLoading(false)
-
     if (error) {
-      const msg = error.message.toLowerCase()
-      if (msg.includes('already registered')) showAlert('Este e-mail já está cadastrado', 'error')
-      else showAlert(Erro: ${error.message}, 'error')
+      error.message.includes('already registered')
+        ? showAlert('Este e-mail já está cadastrado', 'error')
+        : showAlert(error.message, 'error')
     } else {
-      showAlert('Sucesso! Verifique seu e-mail para confirmar a conta 📧', 'success', 12000)
+      showAlert('Cadastro realizado! Confira seu e-mail para confirmar 📧', 'success')
       setEmail('')
       setPassword('')
     }
   }
 
-  // ==================== LOGIN ====================
   const handleSignIn = async () => {
-    if (!email || !password) return showAlert('Preencha e-mail e senha', 'error')
+    if (!email || !password) return showAlert('Preencha todos os campos', 'warning')
 
     setLoading(true)
-    showAlert('Entrando na conta...', 'info')
+    showAlert('Entrando...', 'info')
 
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     setLoading(false)
-
     if (error) {
       const msg = error.message.toLowerCase()
-      if (msg.includes('invalid login credentials')) showAlert('E-mail ou senha incorretos', 'error')
-      else if (msg.includes('email not confirmed')) showAlert('Confirme seu e-mail antes de entrar', 'error')
-      else showAlert(Erro: ${error.message}, 'error')
+      if (msg.includes('invalid login')) showAlert('E-mail ou senha incorretos', 'error')
+      else if (msg.includes('email not confirmed')) showAlert('Confirme seu e-mail antes de entrar', 'warning')
+      else showAlert(error.message, 'error')
     } else {
-      showAlert('Bem-vindo de volta! Login realizado com sucesso 🔥', 'success')
+      showAlert('Login realizado com sucesso! Bem-vindo 🔥', 'success')
     }
   }
 
   return (
-    <>
-      <div style={styles.backdrop}>
-        <div style={styles.card}>
-          <div style={styles.header}>
-            <h1 style={styles.title}>Estou Estudando</h1>
-            <p style={styles.subtitle}>Aprendendo React + Supabase na prática</p>
-          </div>
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h1 style={styles.title}>Estou Estudando</h1>
+        <p style={styles.subtitle}>Login & Cadastro com Supabase</p>
 
-          {/* Alertas bonitos */}
-          {alert.message && (
-            <div style={{
-              ...styles.alert,
-              ...(alert.type === 'success' && styles.alertSuccess),
-              ...(alert.type === 'error' && styles.alertError),
-              ...(alert.type === 'info' && styles.alertInfo),
-            }}>
-              <span>{alert.message}</span>
-            </div>
-          )}
+        <Alert message={alert.message} type={alert.type} onClose={closeAlert} />
 
-          <input
-            type="email"
-            placeholder="seu@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value.trim())}
-            disabled={loading}
-            style={styles.input}
-            autoComplete="email"
-          />
+        <input
+          type="email"
+          placeholder="seu@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value.trim())}
+          disabled={loading}
+          style={styles.input}
+        />
 
-          <input
-            type="password"
-            placeholder="Senha • mínimo 6 caracteres"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
-            style={styles.input}
-            autoComplete="current-password"
-          />
+        <input
+          type="password"
+          placeholder="Senha • mínimo 6 caracteres"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={loading}
+          style={styles.input}
+        />
 
-          <div style={styles.actions}>
-            <button onClick={handleSignIn} disabled={loading} style={styles.btnPrimary}>
-              {loading ? 'Entrando...' : 'Entrar'}
-            </button>
-            <button onClick={handleSignUp} disabled={loading} style={styles.btnSecondary}>
-              {loading ? 'Criando...' : 'Criar conta grátis'}
-            </button>
-          </div>
-
-          <footer style={styles.footer}>
-            Projeto de estudo • 2025 • Feito com 💜 por quem realmente quer te ver vencer
-          </footer>
+        <div style={styles.buttons}>
+          <button onClick={handleSignIn} disabled={loading} style={styles.btnLogin}>
+            {loading ? 'Carregando...' : 'Entrar'}
+          </button>
+          <button onClick={handleSignUp} disabled={loading} style={styles.btnSignup}>
+            {loading ? 'Carregando...' : 'Criar conta'}
+          </button>
         </div>
       </div>
-    </>
+
+      <style jsx>{`
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
   )
 }
 
-// =================================== ESTILOS PROFISSIONAIS ===================================
 const styles = {
-  backdrop: {
+  container: {
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: '20px',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+    fontFamily: '"Inter", system-ui, sans-serif',
   },
   card: {
     background: 'white',
@@ -140,11 +177,9 @@ const styles = {
     maxWidth: '440px',
     width: '100%',
     textAlign: 'center',
-    animation: 'fadeInUp 0.7s ease-out',
   },
-  header: { marginBottom: '40px' },
   title: { margin: '0 0 8px', fontSize: '36px', fontWeight: '700', color: '#222' },
-  subtitle: { margin: 0, fontSize: '16px', color: '#666' },
+  subtitle: { margin: '0 0 40px', fontSize: '16px', color: '#666' },
   input: {
     width: '100%',
     padding: '18px 20px',
@@ -152,12 +187,11 @@ const styles = {
     borderRadius: '14px',
     border: '2px solid #e1e5ea',
     fontSize: '16px',
-    transition: 'all 0.3s',
     outline: 'none',
-    ':focus': { borderColor: '#667eea' },
+    transition: 'border 0.3s',
   },
-  actions: { display: 'flex', gap: '16px', marginTop: '10px' },
-  btnPrimary: {
+  buttons: { display: 'flex', gap: '16px', marginTop: '10px' },
+  btnLogin: {
     flex: 1,
     padding: '18px',
     background: '#4361ee',
@@ -167,9 +201,8 @@ const styles = {
     fontSize: '17px',
     fontWeight: '600',
     cursor: 'pointer',
-    transition: 'all 0.3s',
   },
-  btnSecondary: {
+  btnSignup: {
     flex: 1,
     padding: '18px',
     background: '#06d6a0',
@@ -179,16 +212,5 @@ const styles = {
     fontSize: '17px',
     fontWeight: '600',
     cursor: 'pointer',
-    transition: 'all 0.3s',
   },
-  alert: {
-    padding: '16px 20px',
-    borderRadius: '14px',
-    marginBottom: '24px',
-    fontSize: '15px',
-    fontWeight: '500',
-    animation: 'slideDown 0.4s ease',
-  },
-  alertSuccess: { background: '#d4edda', color: '#155724', border: '1px solid #c3e6cb' },
-  alertError: { background: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb' },
-  alert
+}
