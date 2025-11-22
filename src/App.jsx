@@ -5,175 +5,190 @@ export default function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const [alert, setAlert] = useState({ message: '', type: '' }) // success | error | info
 
-  const showMessage = (text, isError = false) => {
-    setMessage(text)
-    setTimeout(() => setMessage(''), isError ? 8000 : 5000)
+  const showAlert = (message, type = 'info', duration = 7000) => {
+    setAlert({ message, type })
+    if (duration > 0) {
+      setTimeout(() => setAlert({ message: '', type: '' }), duration)
+    }
   }
 
+  // ==================== CADASTRO ====================
   const handleSignUp = async () => {
-    if (!email || !password) {
-      showMessage('⚠ Preencha e-mail e senha', true)
-      return
-    }
+    if (!email || !password) return showAlert('Preencha e-mail e senha', 'error')
+    if (password.length < 6) return showAlert('A senha deve ter no mínimo 6 caracteres', 'error')
 
     setLoading(true)
-    setMessage('Cadastrando usuário...')
+    showAlert('Criando sua conta...', 'info')
 
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: { emailRedirectTo: location.origin }
     })
 
     setLoading(false)
 
     if (error) {
-      showMessage(❌ Erro no cadastro: ${error.message}, true)
+      const msg = error.message.toLowerCase()
+      if (msg.includes('already registered')) showAlert('Este e-mail já está cadastrado', 'error')
+      else showAlert(Erro: ${error.message}, 'error')
     } else {
-      showMessage('✅ Cadastrado com sucesso! Verifique seu e-mail para confirmar.')
+      showAlert('Sucesso! Verifique seu e-mail para confirmar a conta 📧', 'success', 12000)
+      setEmail('')
+      setPassword('')
     }
   }
 
+  // ==================== LOGIN ====================
   const handleSignIn = async () => {
-    if (!email || !password) {
-      showMessage('⚠ Preencha e-mail e senha', true)
-      return
-    }
+    if (!email || !password) return showAlert('Preencha e-mail e senha', 'error')
 
     setLoading(true)
-    setMessage('Entrando na conta...')
+    showAlert('Entrando na conta...', 'info')
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     setLoading(false)
 
     if (error) {
-      showMessage(❌ Erro ao entrar: ${error.message}, true)
+      const msg = error.message.toLowerCase()
+      if (msg.includes('invalid login credentials')) showAlert('E-mail ou senha incorretos', 'error')
+      else if (msg.includes('email not confirmed')) showAlert('Confirme seu e-mail antes de entrar', 'error')
+      else showAlert(Erro: ${error.message}, 'error')
     } else {
-      showMessage('✅ Login realizado com sucesso! Bem-vindo de volta 🔥')
+      showAlert('Bem-vindo de volta! Login realizado com sucesso 🔥', 'success')
     }
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Estou Estudando</h1>
-        <p style={styles.subtitle}>Cadastro e Login com Supabase</p>
-
-        {message && (
-          <div style={message.includes('❌') || message.includes('⚠') ? styles.alertError : styles.alertSuccess}>
-            {message}
+    <>
+      <div style={styles.backdrop}>
+        <div style={styles.card}>
+          <div style={styles.header}>
+            <h1 style={styles.title}>Estou Estudando</h1>
+            <p style={styles.subtitle}>Aprendendo React + Supabase na prática</p>
           </div>
-        )}
 
-        <input
-          type="email"
-          placeholder="Seu e-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value.trim())}
-          disabled={loading}
-          style={styles.input}
-        />
+          {/* Alertas bonitos */}
+          {alert.message && (
+            <div style={{
+              ...styles.alert,
+              ...(alert.type === 'success' && styles.alertSuccess),
+              ...(alert.type === 'error' && styles.alertError),
+              ...(alert.type === 'info' && styles.alertInfo),
+            }}>
+              <span>{alert.message}</span>
+            </div>
+          )}
 
-        <input
-          type="password"
-          placeholder="Sua senha (mín. 6 caracteres)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={loading}
-          style={styles.input}
-        />
+          <input
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value.trim())}
+            disabled={loading}
+            style={styles.input}
+            autoComplete="email"
+          />
 
-        <div style={styles.buttons}>
-          <button onClick={handleSignIn} disabled={loading} style={styles.btnLogin}>
-            {loading ? 'Carregando...' : 'Entrar'}
-          </button>
-          <button onClick={handleSignUp} disabled={loading} style={styles.btnSignup}>
-            {loading ? 'Carregando...' : 'Criar conta'}
-          </button>
+          <input
+            type="password"
+            placeholder="Senha • mínimo 6 caracteres"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            style={styles.input}
+            autoComplete="current-password"
+          />
+
+          <div style={styles.actions}>
+            <button onClick={handleSignIn} disabled={loading} style={styles.btnPrimary}>
+              {loading ? 'Entrando...' : 'Entrar'}
+            </button>
+            <button onClick={handleSignUp} disabled={loading} style={styles.btnSecondary}>
+              {loading ? 'Criando...' : 'Criar conta grátis'}
+            </button>
+          </div>
+
+          <footer style={styles.footer}>
+            Projeto de estudo • 2025 • Feito com 💜 por quem realmente quer te ver vencer
+          </footer>
         </div>
-
-        <footer style={{ marginTop: '40px', fontSize: '14px', color: '#888' }}>
-          Projeto de estudo • React + Vite + Supabase
-        </footer>
       </div>
-    </div>
+    </>
   )
 }
 
-// Estilos limpos e profissionais
+// =================================== ESTILOS PROFISSIONAIS ===================================
 const styles = {
-  container: {
+  backdrop: {
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: '20px',
-    fontFamily: '"Segoe UI", Arial, sans-serif',
+    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
   },
   card: {
     background: 'white',
-    padding: '50px 40px',
-    borderRadius: '20px',
-    boxShadow: '0 20px 50px rgba(0,0,0,0.18)',
-    maxWidth: '420px',
+    padding: '60px 50px',
+    borderRadius: '24px',
+    boxShadow: '0 30px 80px rgba(0,0,0,0.25)',
+    maxWidth: '440px',
     width: '100%',
     textAlign: 'center',
+    animation: 'fadeInUp 0.7s ease-out',
   },
-  title: { margin: '0 0 10px', fontSize: '32px', color: '#333' },
-  subtitle: { margin: '0 0 40px', color: '#666', fontSize: '16px' },
+  header: { marginBottom: '40px' },
+  title: { margin: '0 0 8px', fontSize: '36px', fontWeight: '700', color: '#222' },
+  subtitle: { margin: 0, fontSize: '16px', color: '#666' },
   input: {
     width: '100%',
-    padding: '16px 18px',
-    marginBottom: '16px',
-    borderRadius: '12px',
-    border: '2px solid #e0e0e0',
+    padding: '18px 20px',
+    marginBottom: '18px',
+    borderRadius: '14px',
+    border: '2px solid #e1e5ea',
     fontSize: '16px',
+    transition: 'all 0.3s',
     outline: 'none',
-    transition: 'border 0.3s',
+    ':focus': { borderColor: '#667eea' },
   },
-  buttons: { display: 'flex', gap: '16px', marginTop: '10px' },
-  btnLogin: {
+  actions: { display: 'flex', gap: '16px', marginTop: '10px' },
+  btnPrimary: {
     flex: 1,
-    padding: '16px',
+    padding: '18px',
     background: '#4361ee',
     color: 'white',
     border: 'none',
-    borderRadius: '12px',
-    fontSize: '16px',
+    borderRadius: '14px',
+    fontSize: '17px',
     fontWeight: '600',
     cursor: 'pointer',
+    transition: 'all 0.3s',
   },
-  btnSignup: {
+  btnSecondary: {
     flex: 1,
-    padding: '16px',
+    padding: '18px',
     background: '#06d6a0',
     color: 'white',
     border: 'none',
-    borderRadius: '12px',
-    fontSize: '16px',
+    borderRadius: '14px',
+    fontSize: '17px',
     fontWeight: '600',
     cursor: 'pointer',
+    transition: 'all 0.3s',
   },
-  alertSuccess: {
-    padding: '14px 20px',
-    background: '#d4edda',
-    color: '#155724',
-    borderRadius: '12px',
+  alert: {
+    padding: '16px 20px',
+    borderRadius: '14px',
     marginBottom: '24px',
-    border: '1px solid #c3e6cb',
+    fontSize: '15px',
+    fontWeight: '500',
+    animation: 'slideDown 0.4s ease',
   },
-  alertError: {
-    padding: '14px 20px',
-    background: '#f8d7da',
-    color: '#721c24',
-    borderRadius: '12px',
-    marginBottom: '24px',
-    border: '1px solid #f5c6cb',
-  },
-}
+  alertSuccess: { background: '#d4edda', color: '#155724', border: '1px solid #c3e6cb' },
+  alertError: { background: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb' },
+  alert
