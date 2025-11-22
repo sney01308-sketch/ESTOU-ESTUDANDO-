@@ -1,59 +1,117 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient.js'
 
-function App() {
+export default function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [message, setMessage] = useState('Cadastro e login prontos! Testa aí 🚀')
+  const [message, setMessage] = useState('')
 
-  const signUp = async () => {
+  const handleSignUp = async () => {
+    setMessage('Cadastrando...')
     const { error } = await supabase.auth.signUp({ email, password })
-    if (error) setMessage('Erro: ' + error.message)
-    else setMessage('Cadastrado com sucesso! Confira seu e-mail 📧')
+    if (error) setMessage(Erro: ${error.message})
+    else setMessage('Cadastrado com sucesso! Verifique seu e-mail 📧')
   }
 
-  const signIn = async () => {
+  const handleSignIn = async () => {
+    setMessage('Entrando...')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setMessage('Erro: ' + error.message)
+    if (error) setMessage(Erro: ${error.message})
     else setMessage('Logado com sucesso! 🔥')
   }
 
   return (
-    <div style={{ padding: '60px', textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Estou Estudando</h1>
-      <h2>Cadastro e Login</h2>
-      <p>{message}</p>
+    <main style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      fontFamily: '"Segoe UI", Arial, sans-serif'
+    }}>
+      <div style={{
+        background: 'white',
+        padding: '40px 50px',
+        borderRadius: '16px',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+        width: '100%',
+        maxWidth: '400px',
+        textAlign: 'center'
+      }}>
+        <h1 style={{ margin: '0 0 30px', color: '#333', fontSize: '28px' }}>
+          Estou Estudando
+        </h1>
 
-      <input
-        type="email"
-        placeholder="Seu e-mail"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ width: '320px', padding: '12px', margin: '8px', fontSize: '16px' }}
-      />
-      <br />
-      <input
-        type="password"
-        placeholder="Sua senha"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        style={{ width: '320px', padding: '12px', margin: '8px', fontSize: '16px' }}
-      />
-      <br /><br />
-      <button
-        onClick={signIn}
-        style={{ padding: '14px 40px', margin: '0 10px', fontSize: '18px', background: '#0066ff', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-      >
-        Login
-      </button>
-      <button
-        onClick={signUp}
-        style={{ padding: '14px 40px', margin: '0 10px', fontSize: '18px', background: '#00aa44', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-      >
-        Cadastrar
-      </button>
-    </div>
+        {message && (
+          <p style={{
+            padding: '12px',
+            borderRadius: '8px',
+            margin: '0 0 20px',
+            background: message.includes('Erro') ? '#fee' : '#e6f7ee',
+            color: message.includes('Erro') ? '#c33' : '#090'
+          }}>
+            {message}
+          </p>
+        )}
+
+        <input
+          type="email"
+          placeholder="E-mail"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={inputStyle}
+        />
+
+        <input
+          type="password"
+          placeholder="Senha"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={inputStyle}
+        />
+
+        <div style={{ marginTop: '30px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <button onClick={handleSignIn} style={btnPrimary}>
+            Entrar
+          </button>
+          <button onClick={handleSignUp} style={btnSuccess}>
+            Cadastrar
+          </button>
+        </div>
+      </div>
+    </main>
   )
 }
 
-export default App
+// Estilos reutilizáveis (fica muito mais limpo)
+const inputStyle = {
+  width: '100%',
+  padding: '14px 16px',
+  marginBottom: '16px',
+  border: '2px solid #ddd',
+  borderRadius: '8px',
+  fontSize: '16px',
+  transition: 'border 0.2s'
+}
+
+const btnPrimary = {
+  padding: '14px 32px',
+  background: '#4361ee',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
+  fontSize: '16px',
+  cursor: 'pointer',
+  flex: 1
+}
+
+const btnSuccess = {
+  padding: '14px 32px',
+  background: '#06d6a0',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
+  fontSize: '16px',
+  cursor: 'pointer',
+  flex: 1
+}
