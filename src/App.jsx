@@ -7,48 +7,81 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
-  const signUp = async () => {
-    if (!email || !password) return setMessage('⚠ Preencha e-mail e senha')
-    setLoading(true)
-    setMessage('Cadastrando...')
-    const { error } = await supabase.auth.signUp({ email, password })
-    setLoading(false)
-    setMessage(error ? Erro: ${error.message} : 'Cadastrado! Confira seu e-mail 📧')
+  const showMessage = (text, isError = false) => {
+    setMessage(text)
+    setTimeout(() => setMessage(''), isError ? 8000 : 5000)
   }
 
-  const signIn = async () => {
-    if (!email || !password) return setMessage('⚠ Preencha e-mail e senha')
+  const handleSignUp = async () => {
+    if (!email || !password) {
+      showMessage('⚠ Preencha e-mail e senha', true)
+      return
+    }
+
     setLoading(true)
-    setMessage('Entrando...')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    setMessage('Cadastrando usuário...')
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
+
     setLoading(false)
-    setMessage(error ? Erro: ${error.message} : 'Logado com sucesso! 🔥')
+
+    if (error) {
+      showMessage(❌ Erro no cadastro: ${error.message}, true)
+    } else {
+      showMessage('✅ Cadastrado com sucesso! Verifique seu e-mail para confirmar.')
+    }
+  }
+
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      showMessage('⚠ Preencha e-mail e senha', true)
+      return
+    }
+
+    setLoading(true)
+    setMessage('Entrando na conta...')
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    setLoading(false)
+
+    if (error) {
+      showMessage(❌ Erro ao entrar: ${error.message}, true)
+    } else {
+      showMessage('✅ Login realizado com sucesso! Bem-vindo de volta 🔥')
+    }
   }
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         <h1 style={styles.title}>Estou Estudando</h1>
-        <p style={styles.subtitle}>Login e Cadastro</p>
+        <p style={styles.subtitle}>Cadastro e Login com Supabase</p>
 
         {message && (
-          <p style={message.includes('Erro') || message.includes('⚠') ? styles.error : styles.success}>
+          <div style={message.includes('❌') || message.includes('⚠') ? styles.alertError : styles.alertSuccess}>
             {message}
-          </p>
+          </div>
         )}
 
         <input
           type="email"
-          placeholder="E-mail"
+          placeholder="Seu e-mail"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value.trim())}
           disabled={loading}
           style={styles.input}
         />
 
         <input
           type="password"
-          placeholder="Senha"
+          placeholder="Sua senha (mín. 6 caracteres)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
@@ -56,19 +89,23 @@ export default function App() {
         />
 
         <div style={styles.buttons}>
-          <button onClick={signIn} disabled={loading} style={styles.btnLogin}>
+          <button onClick={handleSignIn} disabled={loading} style={styles.btnLogin}>
             {loading ? 'Carregando...' : 'Entrar'}
           </button>
-          <button onClick={signUp} disabled={loading} style={styles.btnSignup}>
-            {loading ? 'Carregando...' : 'Cadastrar'}
+          <button onClick={handleSignUp} disabled={loading} style={styles.btnSignup}>
+            {loading ? 'Carregando...' : 'Criar conta'}
           </button>
         </div>
+
+        <footer style={{ marginTop: '40px', fontSize: '14px', color: '#888' }}>
+          Projeto de estudo • React + Vite + Supabase
+        </footer>
       </div>
     </div>
   )
 }
 
-// Estilos profissionais e limpos
+// Estilos limpos e profissionais
 const styles = {
   container: {
     minHeight: '100vh',
@@ -76,29 +113,31 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '20px'
+    padding: '20px',
+    fontFamily: '"Segoe UI", Arial, sans-serif',
   },
   card: {
     background: 'white',
     padding: '50px 40px',
     borderRadius: '20px',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-    maxWidth: '400px',
+    boxShadow: '0 20px 50px rgba(0,0,0,0.18)',
+    maxWidth: '420px',
     width: '100%',
-    textAlign: 'center'
+    textAlign: 'center',
   },
   title: { margin: '0 0 10px', fontSize: '32px', color: '#333' },
-  subtitle: { margin: '0 0 40px', color: '#777', fontSize: '16px' },
+  subtitle: { margin: '0 0 40px', color: '#666', fontSize: '16px' },
   input: {
     width: '100%',
-    padding: '16px',
+    padding: '16px 18px',
     marginBottom: '16px',
     borderRadius: '12px',
-    border: '2px solid #ddd',
+    border: '2px solid #e0e0e0',
     fontSize: '16px',
-    outline: 'none'
+    outline: 'none',
+    transition: 'border 0.3s',
   },
-  buttons: { display: 'flex', gap: '16px', marginTop: '20px' },
+  buttons: { display: 'flex', gap: '16px', marginTop: '10px' },
   btnLogin: {
     flex: 1,
     padding: '16px',
@@ -108,7 +147,7 @@ const styles = {
     borderRadius: '12px',
     fontSize: '16px',
     fontWeight: '600',
-    cursor: 'pointer'
+    cursor: 'pointer',
   },
   btnSignup: {
     flex: 1,
@@ -119,8 +158,22 @@ const styles = {
     borderRadius: '12px',
     fontSize: '16px',
     fontWeight: '600',
-    cursor: 'pointer'
+    cursor: 'pointer',
   },
-  success: { padding: '14px', background: '#d4edda', color: '#155724', borderRadius: '8px', marginBottom: '20px' },
-  error: { padding: '14px', background: '#f8d7da', color: '#721c24', borderRadius: '8px', marginBottom: '20px' }
+  alertSuccess: {
+    padding: '14px 20px',
+    background: '#d4edda',
+    color: '#155724',
+    borderRadius: '12px',
+    marginBottom: '24px',
+    border: '1px solid #c3e6cb',
+  },
+  alertError: {
+    padding: '14px 20px',
+    background: '#f8d7da',
+    color: '#721c24',
+    borderRadius: '12px',
+    marginBottom: '24px',
+    border: '1px solid #f5c6cb',
+  },
 }
