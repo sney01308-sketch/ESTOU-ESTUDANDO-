@@ -4,114 +4,154 @@ import { supabase } from './supabaseClient.js'
 export default function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState('') // success ou error
 
   const handleSignUp = async () => {
-    setMessage('Cadastrando...')
+    if (!email || !password) return setError('Preencha e-mail e senha')
+    setLoading(true)
+    setMessage('')
     const { error } = await supabase.auth.signUp({ email, password })
-    if (error) setMessage(Erro: ${error.message})
-    else setMessage('Cadastrado com sucesso! Verifique seu e-mail 📧')
+    setLoading(false)
+    if (error) setError(error.message)
+    else setSuccess('Cadastrado com sucesso! Verifique seu e-mail 📧')
   }
 
   const handleSignIn = async () => {
-    setMessage('Entrando...')
+    if (!email || !password) return setError('Preencha e-mail e senha')
+    setLoading(true)
+    setMessage('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setMessage(Erro: ${error.message})
-    else setMessage('Logado com sucesso! 🔥')
+    setLoading(false)
+    if (error) setError(error.message)
+    else setSuccess('Logado com sucesso! 🔥')
+  }
+
+  const setSuccess = (text) => {
+    setMessage(text)
+    setMessageType('success')
+  }
+
+  const setError = (text) => {
+    setMessage(text)
+    setMessageType('error')
   }
 
   return (
-    <main style={{
+    <div style={{
       minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      fontFamily: '"Segoe UI", Arial, sans-serif'
+      padding: '20px',
+      fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif'
     }}>
       <div style={{
         background: 'white',
-        padding: '40px 50px',
-        borderRadius: '16px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+        borderRadius: '20px',
+        boxShadow: '0 25px 50px rgba(0,0,0,0.15)',
+        padding: '50px 40px',
         width: '100%',
-        maxWidth: '400px',
-        textAlign: 'center'
+        maxWidth: '420px',
+        textAlign: 'center',
+        animation: 'fadeIn 0.6s ease-out'
       }}>
-        <h1 style={{ margin: '0 0 30px', color: '#333', fontSize: '28px' }}>
+        <h1 style={{ margin: '0 0 8px', fontSize: '32px', color: '#333' }}>
           Estou Estudando
         </h1>
+        <p style={{ margin: '0 0 40px', color: '#666', fontSize: '16px' }}>
+          Cadastro e Login com Supabase
+        </p>
 
         {message && (
-          <p style={{
-            padding: '12px',
-            borderRadius: '8px',
-            margin: '0 0 20px',
-            background: message.includes('Erro') ? '#fee' : '#e6f7ee',
-            color: message.includes('Erro') ? '#c33' : '#090'
+          <div style={{
+            padding: '14px 20px',
+            borderRadius: '12px',
+            marginBottom: '24px',
+            background: messageType === 'success' ? '#d4edda' : '#f8d7da',
+            color: messageType === 'success' ? '#155724' : '#721c24',
+            border: 1px solid ${messageType === 'success' ? '#c3e6cb' : '#f5c6cb'},
+            animation: 'slideDown 0.4s ease'
           }}>
             {message}
-          </p>
+          </div>
         )}
 
         <input
           type="email"
-          placeholder="E-mail"
+          placeholder="Seu e-mail"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={loading}
           style={inputStyle}
         />
 
         <input
           type="password"
-          placeholder="Senha"
+          placeholder="Sua senha (mín. 6 caracteres)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          disabled={loading}
           style={inputStyle}
         />
 
-        <div style={{ marginTop: '30px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
-          <button onClick={handleSignIn} style={btnPrimary}>
-            Entrar
+        <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
+          <button onClick={handleSignIn} disabled={loading} style={btnLogin}>
+            {loading ? 'Entrando...' : 'Entrar'}
           </button>
-          <button onClick={handleSignUp} style={btnSuccess}>
-            Cadastrar
+          <button onClick={handleSignUp} disabled={loading} style={btnSignup}>
+            {loading ? 'Cadastrando...' : 'Criar conta'}
           </button>
         </div>
+
+        <p style={{ marginTop: '30px', fontSize: '14px', color: '#888' }}>
+          Projeto de estudo • React + Vite + Supabase
+        </p>
       </div>
-    </main>
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+    </div>
   )
 }
 
-// Estilos reutilizáveis (fica muito mais limpo)
 const inputStyle = {
   width: '100%',
-  padding: '14px 16px',
+  padding: '16px 18px',
   marginBottom: '16px',
-  border: '2px solid #ddd',
-  borderRadius: '8px',
+  border: '2px solid #e1e5e9',
+  borderRadius: '12px',
   fontSize: '16px',
-  transition: 'border 0.2s'
+  transition: 'all 0.3s',
+  outline: 'none'
 }
 
-const btnPrimary = {
-  padding: '14px 32px',
+const btnLogin = {
+  flex: 1,
+  padding: '16px',
   background: '#4361ee',
   color: 'white',
   border: 'none',
-  borderRadius: '8px',
+  borderRadius: '12px',
   fontSize: '16px',
+  fontWeight: '600',
   cursor: 'pointer',
-  flex: 1
+  transition: 'all 0.3s'
 }
 
-const btnSuccess = {
-  padding: '14px 32px',
+const btnSignup = {
+  flex: 1,
+  padding: '16px',
   background: '#06d6a0',
   color: 'white',
   border: 'none',
-  borderRadius: '8px',
+  borderRadius: '12px',
   fontSize: '16px',
+  fontWeight: '600',
   cursor: 'pointer',
-  flex: 1
+  transition: 'all 0.3s'
 }
